@@ -22,7 +22,7 @@ SERVICE_ACCOUNT_FILE = 'service_account_key.json'
 
 # Google Sheet ID (find this in your Google Sheet's URL)
 # Please replace '16uC4Rj1EohFXhR1mHEMraB4xPafI2WltO4Q8_DL4Zac' with your actual Sheet ID
-SPREADSHEET_ID = '1iyNH3jgsAVHcuPzLY_kMhvNNrET-LwnKv6snUrP7khs'
+SPREADSHEET_ID = '1iyNH3jgsAVHcuPzLY_kMhvNNrET-LwnKv6snUrP7khsc'
 
 # Name of the tab (worksheet) in your Google Sheet that contains the data
 # Please replace 'TradeData' with your actual tab name
@@ -40,15 +40,15 @@ def get_data_from_sheet():
         if st.secrets.get("gspread_service_account_credentials"):
             # Load credentials from Streamlit Secrets (which is a dictionary)
             creds_info = st.secrets["gspread_service_account_credentials"]
-            # Use from_service_account_info() for dictionary credentials
-            creds = ServiceAccountCredentials.from_service_account_info(creds_info, SCOPE)
+            # Use gspread.service_account_from_dict() for dictionary credentials
+            # This is the recommended way to pass dict credentials to gspread
+            client = gspread.service_account_from_dict(creds_info)
         else:
             # Load credentials from a JSON file (for Colab or local testing)
+            # This path requires the SERVICE_ACCOUNT_FILE to exist
             creds = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_FILE, SCOPE)
+            client = gspread.authorize(creds)
             
-        # Authorize gspread to access Google Sheets
-        client = gspread.authorize(creds)
-
         # Open the Spreadsheet and select the Worksheet (tab)
         spreadsheet = client.open_by_id(SPREADSHEET_ID)
         worksheet = spreadsheet.worksheet(SHEET_NAME)
