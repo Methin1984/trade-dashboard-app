@@ -1,4 +1,5 @@
-# %%writefile เป็น Colab magic command ที่ใช้บันทึกเนื้อหา Cell ลงในไฟล์
+# app.py - Streamlit Web App Dashboard for Trade Data
+
 import streamlit as st
 import pandas as pd
 import gspread
@@ -6,63 +7,64 @@ from oauth2client.service_account import ServiceAccountCredentials
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import json # Import json library to parse secrets
 
-# --- กำหนดค่า Google Sheet ---
-# ขอบเขตการอนุญาต (Permissions) สำหรับ Google Sheets API
+# --- Google Sheet Configuration ---
+# Permissions scope for Google Sheets API
 SCOPE = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
 ]
 
-# ชื่อไฟล์ Service Account JSON key ที่คุณอัปโหลดไป Colab
-# ตรวจสอบให้แน่ใจว่าไฟล์นี้อยู่ใน Colab Session Storage แล้ว และชื่อไฟล์ตรงกัน
-# สำหรับการ Deploy บน Streamlit Cloud เราจะจัดการไฟล์นี้ด้วย Streamlit Secrets
-SERVICE_ACCOUNT_FILE = 'service_account_key.json' # << ตรวจสอบชื่อไฟล์ของคุณ
+# File name for Service Account JSON key (used for local/Colab testing)
+# For Streamlit Cloud deployment, this file is handled via Streamlit Secrets
+SERVICE_ACCOUNT_FILE = 'service_account_key.json' 
 
-# Sheet ID ของ Google Sheet ของคุณ (หาได้จาก URL ของ Google Sheet)
-# โปรดเปลี่ยน '16uC4Rj1EohFXhR1mHEMraB4xPafI2WltO4Q8_DL4Zac' เป็น Sheet ID ของคุณเอง
+# Google Sheet ID (find this in your Google Sheet's URL)
+# Please replace '16uC4Rj1EohFXhR1mHEMraB4xPafI2WltO4Q8_DL4Zac' with your actual Sheet ID
 SPREADSHEET_ID = '1iyNH3jgsAVHcuPzLY_kMhvNNrET-LwnKv6snUrP7khs'
 
-# ชื่อ Tab ของ Google Sheet ที่มีข้อมูล (เช่น 'TradeData' หรือ 'Sheet1')
-# โปรดเปลี่ยน 'TradeData' เป็นชื่อ Tab ของคุณเอง
+# Name of the tab (worksheet) in your Google Sheet that contains the data
+# Please replace 'TradeData' with your actual tab name
 SHEET_NAME = 'TradeData'
 
-# --- ฟังก์ชันสำหรับดึงข้อมูลจาก Google Sheet (พร้อม Cache) ---
-# @st.cache_data เป็น decorator ของ Streamlit ที่ใช้ Cache ข้อมูล
-# เพื่อให้แอปทำงานเร็วขึ้น ไม่ต้องดึงข้อมูลซ้ำบ่อยๆ
-@st.cache_data(ttl=300) # Cache ข้อมูล 5 นาที (300 วินาที)
+# --- Function to Fetch Data from Google Sheet (with Caching) ---
+# @st.cache_data is a Streamlit decorator that caches the data
+# This makes the app faster by avoiding repeated data fetches
+@st.cache_data(ttl=300) # Cache data for 5 minutes (300 seconds)
 def get_data_from_sheet():
-    """ดึงข้อมูลทั้งหมดจาก Google Sheet ที่ระบุโดยใช้ Service Account."""
+    """Fetches all data from the specified Google Sheet using a Service Account."""
     try:
-        # สร้าง Credentials จากไฟล์ Service Account JSON key
-        # สำหรับ Streamlit Cloud, เราจะโหลดจาก st.secrets แทน
+        # Create Credentials from Service Account JSON key
+        # For Streamlit Cloud, we load from st.secrets
         if st.secrets.get("gspread_service_account_credentials"):
-            # โหลดจาก Streamlit Secrets
-            creds_json = st.secrets["gspread_service_account_credentials"]
-            creds = ServiceAccountCredentials.from_json(creds_json, SCOPE)
+            # Load credentials from Streamlit Secrets (which is a dictionary)
+            creds_info = st.secrets["gspread_service_account_credentials"]
+            # Use from_service_account_info() for dictionary credentials
+            creds = ServiceAccountCredentials.from_service_account_info(creds_info, SCOPE)
         else:
-            # โหลดจากไฟล์ JSON (สำหรับ Colab หรือ Local Testing)
+            # Load credentials from a JSON file (for Colab or local testing)
             creds = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_FILE, SCOPE)
             
-        # ให้สิทธิ์ gspread ในการเข้าถึง Google Sheets
+        # Authorize gspread to access Google Sheets
         client = gspread.authorize(creds)
 
-        # เปิด Spreadsheet และเลือก Worksheet (Tab)
+        # Open the Spreadsheet and select the Worksheet (tab)
         spreadsheet = client.open_by_id(SPREADSHEET_ID)
         worksheet = spreadsheet.worksheet(SHEET_NAME)
 
-        # ดึงข้อมูลทั้งหมดเป็น list of lists
+        # Fetch all data as a list of lists
         data = worksheet.get_all_values()
 
-        # แปลงเป็น Pandas DataFrame (แถวแรกเป็น Header)
+        # Convert to Pandas DataFrame (first row as header)
         df = pd.DataFrame(data[1:], columns=data[0])
 
-        # แปลงคอลัมน์ 'นำเข้า', 'ส่งออก', 'ปี พ.ศ.' ให้เป็นตัวเลข
+        # Convert 'นำเข้า', 'ส่งออก', 'ปี พ.ศ.' columns to numeric
         numeric_cols = ['นำเข้า', 'ส่งออก', 'ปี พ.ศ.']
         for col in numeric_cols:
             if col in df.columns:
-                # errors='coerce' จะเปลี่ยนค่าที่ไม่สามารถแปลงเป็นตัวเลขได้ให้เป็น NaN
-                # fillna(0) จะแทนที่ NaN ด้วย 0
+                # errors='coerce' converts non-numeric values to NaN
+                # fillna(0) replaces NaN with 0
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
         st.success("โหลดข้อมูลจาก Google Sheet สำเร็จ!")
@@ -70,7 +72,7 @@ def get_data_from_sheet():
     except gspread.exceptions.SpreadsheetNotFound:
         st.error(f"เกิดข้อผิดพลาด: ไม่พบ Spreadsheet ID '{SPREADSHEET_ID}' หรือชื่อชีต '{SHEET_NAME}'")
         st.info("โปรดตรวจสอบ SPREADSHEET_ID และ SHEET_NAME ในโค้ด")
-        return pd.DataFrame() # คืน DataFrame ว่างเปล่า
+        return pd.DataFrame() # Return an empty DataFrame
     except FileNotFoundError:
         st.error(f"เกิดข้อผิดพลาด: ไม่พบไฟล์ Service Account JSON ที่ชื่อ '{SERVICE_ACCOUNT_FILE}'")
         st.info("โปรดตรวจสอบว่าคุณได้อัปโหลดไฟล์ '{SERVICE_ACCOUNT_FILE}' ไปยัง Colab แล้ว และชื่อไฟล์ถูกต้อง")
@@ -80,30 +82,30 @@ def get_data_from_sheet():
         st.info("โปรดตรวจสอบว่า Service Account มีสิทธิ์เข้าถึง Google Sheet และการเชื่อมต่อถูกต้อง")
         return pd.DataFrame()
 
-# --- สร้าง Streamlit UI ---
-st.set_page_config(layout="wide", page_title="แดชบอร์ดข้อมูลการค้า") # ตั้งค่าหน้ากว้างขึ้นและชื่อหน้า
+# --- Build Streamlit UI ---
+st.set_page_config(layout="wide", page_title="แดชบอร์ดข้อมูลการค้า") # Set wide layout and page title
 st.title('📊 แดชบอร์ดข้อมูลการค้าระหว่างประเทศ')
 
-# ดึงข้อมูล
+# Fetch data
 df = get_data_from_sheet()
 
 if not df.empty:
     st.sidebar.header("ตัวเลือกการวิเคราะห์และค้นหา")
 
-    # ตัวเลือกการวิเคราะห์
+    # Analysis options
     analysis_type = st.sidebar.selectbox(
         "เลือกประเภทการวิเคราะห์:",
         ("ภาพรวม", "การวิเคราะห์สินค้า", "การวิเคราะห์ประเทศคู่ค้า", "การวิเคราะห์พิกัดศุลกากร")
     )
 
-    # ตัวกรองข้อมูลหลัก
+    # Main data filters
     st.sidebar.subheader("ตัวกรองข้อมูล")
     selected_country = st.sidebar.text_input('ค้นหาชื่อประเทศ (บางส่วน)')
     selected_hs_code = st.sidebar.text_input('ค้นหาพิกัดศุลกากร (บางส่วน)')
     selected_item = st.sidebar.text_input('ค้นหารายการสินค้า (บางส่วน)')
     selected_year = st.sidebar.text_input('ค้นหาปี พ.ศ. (เช่น 2564)')
 
-    # กรองข้อมูลตามเงื่อนไขที่ผู้ใช้ระบุ
+    # Filter data based on user input
     filtered_df = df.copy()
 
     if selected_country:
@@ -118,13 +120,13 @@ if not df.empty:
     st.subheader(f"ข้อมูลที่กรองแล้ว ({len(filtered_df)} แถว)")
     st.dataframe(filtered_df, use_container_width=True)
 
-    # --- ส่วนแสดงผลกราฟตามประเภทการวิเคราะห์ที่เลือก ---
+    # --- Display Graphs based on selected analysis type ---
     st.header(analysis_type)
 
     if filtered_df.empty:
         st.warning("ไม่พบข้อมูลตามเงื่อนไขที่เลือก กรุณาลองเลือกใหม่.")
     else:
-        # ฟังก์ชันช่วยสร้างกราฟหลัก (Bar/Line Chart)
+        # Helper function to create main trade charts (Bar/Line Chart)
         def create_trade_chart(df_data, group_col, title):
             summary_df = df_data.groupby(group_col)[['นำเข้า', 'ส่งออก']].sum().reset_index()
             fig = go.Figure(data=[
@@ -134,7 +136,7 @@ if not df.empty:
             fig.update_layout(barmode='group', title_text=title)
             return fig
 
-        # ฟังก์ชันช่วยสร้างกราฟ Top N (Bar Chart)
+        # Helper function to create Top N charts (Bar Chart)
         def create_top_n_chart(df_data, col_name, value_col, title, top_n=10):
             if col_name not in df_data.columns:
                 st.warning(f"ไม่พบคอลัมน์ '{col_name}' ในข้อมูล.")
@@ -145,7 +147,7 @@ if not df.empty:
             fig.update_yaxes(title_text=value_col)
             return fig
             
-        # ฟังก์ชันช่วยสร้างกราฟดุลการค้า (Column Chart)
+        # Helper function to create trade balance charts (Column Chart)
         def create_balance_chart(df_data, group_col, title, top_n=10):
             if group_col not in df_data.columns:
                 st.warning(f"ไม่พบคอลัมน์ '{group_col}' ในข้อมูล.")
@@ -172,11 +174,11 @@ if not df.empty:
             with col2:
                 st.plotly_chart(create_top_n_chart(filtered_df, 'ชื่อประเทศ', 'ส่งออก', '10 อันดับแรกประเทศคู่ค้า (ส่งออก)'), use_container_width=True)
 
-            # กราฟแนวโน้มการนำเข้า-ส่งออกรายปี
+            # Yearly import-export trend graph
             if 'ปี พ.ศ.' in filtered_df.columns:
                 yearly_summary = filtered_df.groupby('ปี พ.ศ.')[['นำเข้า', 'ส่งออก']].sum().reset_index().sort_values(by='ปี พ.ศ.')
                 fig = px.line(yearly_summary, x='ปี พ.ศ.', y=['นำเข้า', 'ส่งออก'], title='แนวโน้มการนำเข้า-ส่งออกรายปี')
-                fig.update_xaxes(type='category') # ให้แกน X เป็น Category สำหรับปี พ.ศ.
+                fig.update_xaxes(type='category') # Set X-axis as Category for year
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.warning("ไม่พบคอลัมน์ 'ปี พ.ศ.' สำหรับกราฟแนวโน้มรายปี.")
