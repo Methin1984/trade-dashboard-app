@@ -21,7 +21,7 @@ SERVICE_ACCOUNT_FILE = 'service_account_key.json' # << ตรวจสอบช�
 
 # Sheet ID ของ Google Sheet ของคุณ (หาได้จาก URL ของ Google Sheet)
 # โปรดเปลี่ยน '16uC4Rj1EohFXhR1mHEMraB4xPafI2WltO4Q8_DL4Zac' เป็น Sheet ID ของคุณเอง
-SPREADSHEET_ID = '16uC4Rj1EohFXhR1mHEMraB4xPafI2WltO4Q8_DL4Zac'
+SPREADSHEET_ID = '1iyNH3jgsAVHcuPzLY_kMhvNNrET-LwnKv6snUrP7khs'
 
 # ชื่อ Tab ของ Google Sheet ที่มีข้อมูล (เช่น 'TradeData' หรือ 'Sheet1')
 # โปรดเปลี่ยน 'TradeData' เป็นชื่อ Tab ของคุณเอง
