@@ -22,7 +22,7 @@ SERVICE_ACCOUNT_FILE = 'service_account_key.json'
 
 # Google Sheet ID (find this in your Google Sheet's URL)
 # Please replace '16uC4Rj1EohFXhR1mHEMraB4xPafI2WltO4Q8_DL4Zac' with your actual Sheet ID
-SPREADSHEET_ID = '1iyNH3jgsAVHcuPzLY_kMhvNNrET-LwnKv6snUrP7khsc'
+SPREADSHEET_ID = '1iyNH3jgsAVHcuPzLY_kMhvNNrET-LwnKv6snUrP7khs'
 
 # Name of the tab (worksheet) in your Google Sheet that contains the data
 # Please replace 'TradeData' with your actual tab name
@@ -37,11 +37,17 @@ def get_data_from_sheet():
     try:
         # Create Credentials from Service Account JSON key
         # For Streamlit Cloud, we load from st.secrets
-        if st.secrets.get("gspread_service_account_credentials"):
-            # Load credentials from Streamlit Secrets (which is a dictionary)
-            creds_info = st.secrets["gspread_service_account_credentials"]
+        if st.secrets.get("gspread_private_key") and st.secrets.get("gspread_credentials_info"):
+            # Load private_key from Streamlit Secrets
+            private_key = st.secrets["gspread_private_key"]
+            # Load other credentials info from Streamlit Secrets (as a string, then parse to dict)
+            creds_info_str = st.secrets["gspread_credentials_info"]
+            creds_info = json.loads(creds_info_str)
+            
+            # Combine private_key back into creds_info dictionary
+            creds_info["private_key"] = private_key
+            
             # Use gspread.service_account_from_dict() for dictionary credentials
-            # This is the recommended way to pass dict credentials to gspread
             client = gspread.service_account_from_dict(creds_info)
         else:
             # Load credentials from a JSON file (for Colab or local testing)
