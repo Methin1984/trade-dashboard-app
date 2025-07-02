@@ -1,3 +1,5 @@
+# app.py - Streamlit Web App Dashboard for Trade Data
+
 import streamlit as st
 import pandas as pd
 import gspread
