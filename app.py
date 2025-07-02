@@ -40,12 +40,14 @@ def get_data_from_sheet():
             creds_info = json.loads(creds_json_string)
             
             # Use gspread.service_account_from_dict() for dictionary credentials
+            # This directly returns an authorized client object
             client = gspread.service_account_from_dict(creds_info)
         else:
             # Load credentials from a JSON file (for Colab or local testing)
             # This path requires the SERVICE_ACCOUNT_FILE to exist
             from oauth2client.service_account import ServiceAccountCredentials
             creds = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_FILE, SCOPE)
+            # Authorize gspread to access Google Sheets for local/Colab testing
             client = gspread.authorize(creds)
             
         # Open the Spreadsheet and select the Worksheet (tab)
@@ -217,4 +219,4 @@ if not df.empty:
             st.plotly_chart(create_balance_chart(filtered_df, 'พิกัดศุลกากร', 'ดุลการค้า 10 อันดับแรกของพิกัดศุลกากร'), use_container_width=True)
 
 else:
-    st.info("ไม่สามารถโหลดข้อมูลได้ โปรดตรวจสอบการตั้งค่า Service Account และ Google Sheet ID/Sheet Name.")
+    st.info("ไม่สามารถโหลดข้อมูลได้ โปรดตรวจสอบการตั้งค่าและไฟล์ Service Account JSON.")
