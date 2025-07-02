@@ -1,12 +1,6 @@
-# app.py - Streamlit Web App Dashboard for Trade Data
-
 import streamlit as st
 import pandas as pd
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import json # Import json library to parse secrets
 
 # --- Google Sheet Configuration ---
@@ -36,22 +30,19 @@ def get_data_from_sheet():
     """Fetches all data from the specified Google Sheet using a Service Account."""
     try:
         # Create Credentials from Service Account JSON key
-        # For Streamlit Cloud, we load from st.secrets
-        if st.secrets.get("gspread_private_key") and st.secrets.get("gspread_credentials_info"):
-            # Load private_key from Streamlit Secrets
-            private_key = st.secrets["gspread_private_key"]
-            # Load other credentials info from Streamlit Secrets (as a string, then parse to dict)
-            creds_info_str = st.secrets["gspread_credentials_info"]
-            creds_info = json.loads(creds_info_str)
-            
-            # Combine private_key back into creds_info dictionary
-            creds_info["private_key"] = private_key
+        # For Streamlit Cloud, we load from st.secrets as a single JSON string
+        if st.secrets.get("gspread_service_account_json"):
+            # Load the entire JSON key as a string from Streamlit Secrets
+            creds_json_string = st.secrets["gspread_service_account_json"]
+            # Parse the JSON string back into a Python dictionary
+            creds_info = json.loads(creds_json_string)
             
             # Use gspread.service_account_from_dict() for dictionary credentials
             client = gspread.service_account_from_dict(creds_info)
         else:
             # Load credentials from a JSON file (for Colab or local testing)
             # This path requires the SERVICE_ACCOUNT_FILE to exist
+            from oauth2client.service_account import ServiceAccountCredentials
             creds = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_FILE, SCOPE)
             client = gspread.authorize(creds)
             
