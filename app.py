@@ -4,6 +4,8 @@ import streamlit as st
 import pandas as pd
 import gspread
 import json # Import json library to parse secrets
+import plotly.express as px # Import plotly.express for easier plotting
+import plotly.graph_objects as go # Import plotly.graph_objects for general plotting
 
 # --- Google Sheet Configuration ---
 # Permissions scope for Google Sheets API
@@ -34,34 +36,28 @@ def get_data_from_sheet():
         # Create Credentials from Service Account JSON key
         # For Streamlit Cloud, we explicitly load from st.secrets and pass to service_account_from_dict
         if st.secrets.get("gcp_service_account"):
-            # st.write("Debug: Found 'gcp_service_account' secret.") # Debugging line
             try:
                 creds_data = st.secrets["gcp_service_account"]
-                # st.write(f"Debug: Type of 'gcp_service_account' secret: {type(creds_data)}") # Debugging line
                 
                 # Streamlit secrets can sometimes load JSON directly as a dict, or as a string.
                 # We need to handle both cases to ensure creds_info is a dictionary.
                 if isinstance(creds_data, str):
-                    # st.write("Debug: Secret is a string, attempting to parse as JSON.") # Debugging line
                     creds_info = json.loads(creds_data)
                 elif isinstance(creds_data, dict):
-                    # st.write("Debug: Secret is already a dictionary.") # Debugging line
                     creds_info = creds_data
                 else:
-                    st.error(f"Debug Error: Unexpected type for 'gcp_service_account' secret: {type(creds_data)}")
+                    st.error(f"Error: Unexpected type for 'gcp_service_account' secret: {type(creds_data)}")
                     return pd.DataFrame() # Return empty DataFrame on unexpected type
                 
                 # Use gspread.service_account_from_dict() to explicitly create client from dictionary
                 client = gspread.service_account_from_dict(creds_info) 
-                # st.write("Debug: gspread client created successfully from secrets.") # Debugging line
             except json.JSONDecodeError as e_json:
-                st.error(f"Debug Error: Failed to parse 'gcp_service_account' secret as JSON. Check secret format. Error: {e_json}")
+                st.error(f"Error: Failed to parse 'gcp_service_account' secret as JSON. Check secret format. Error: {e_json}")
                 return pd.DataFrame()
             except Exception as e_gspread:
-                st.error(f"Debug Error: Failed to create gspread client from 'gcp_service_account' secret. Error: {e_gspread}")
+                st.error(f"Error: Failed to create gspread client from 'gcp_service_account' secret. Error: {e_gspread}")
                 return pd.DataFrame()
         else:
-            # st.write("Debug: 'gcp_service_account' secret not found, falling back to local file.") # Debugging line
             # Load credentials from a JSON file (for Colab or local testing)
             # This path requires the SERVICE_ACCOUNT_FILE to exist
             from oauth2client.service_account import ServiceAccountCredentials
@@ -103,7 +99,7 @@ def get_data_from_sheet():
 
 # --- Build Streamlit UI ---
 st.set_page_config(layout="wide", page_title="แดชบอร์ดข้อมูลการค้า") # Set wide layout and page title
-st.title('📊 แดชบอร์ดข้อมูลการค้าระหว่างประเทศ')
+st.title('� แดชบอร์ดข้อมูลการค้าระหว่างประเทศ')
 
 # Fetch data
 df = get_data_from_sheet()
@@ -162,7 +158,7 @@ if not df.empty:
                 return go.Figure()
             summary = df_data.groupby(col_name)[value_col].sum().nlargest(top_n).reset_index()
             fig = px.bar(summary, x=col_name, y=value_col, title=title)
-            fig.update_xaxes(title_text=col_name) # Corrected from col_col to col_name
+            fig.update_xaxes(title_text=col_name)
             fig.update_yaxes(title_text=value_col)
             return fig
             
