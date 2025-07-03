@@ -17,7 +17,7 @@ SCOPE = [
 SERVICE_ACCOUNT_FILE = 'service_account_key.json' 
 
 # Google Sheet ID (find this in your Google Sheet's URL)
-# Please replace '16uC4Rj1EohFXhR1mHEMraB4xPafI2WltO4Q8_DL4Zac' with your actual Sheet ID
+# Please replace '1iyNH3jgsAVHcuPzLY_kMhvNNrET-LwnKv6snUrP7khs' with your actual Sheet ID
 SPREADSHEET_ID = '1iyNH3jgsAVHcuPzLY_kMhvNNrET-LwnKv6snUrP7khs'
 
 # Name of the tab (worksheet) in your Google Sheet that contains the data
@@ -32,22 +32,41 @@ def get_data_from_sheet():
     """Fetches all data from the specified Google Sheet using a Service Account."""
     try:
         # Create Credentials from Service Account JSON key
-        # For Streamlit Cloud, we load from st.secrets as a single JSON string
-        if st.secrets.get("gspread_service_account_json"):
-            # Load the entire JSON key as a string from Streamlit Secrets
-            creds_json_string = st.secrets["gspread_service_account_json"]
-            # Parse the JSON string back into a Python dictionary
-            creds_info = json.loads(creds_json_string)
-            
-            # Use gspread.service_account_from_dict() for dictionary credentials
-            # This directly returns an authorized client object
-            client = gspread.service_account_from_dict(creds_info)
+        # For Streamlit Cloud, use gspread.service_account() which automatically
+        # looks for secrets in st.secrets["gcp_service_account"]
+        if st.secrets.get("gcp_service_account"):
+            st.write("Debug: Found 'gcp_service_account' secret.")
+            try:
+                creds_data = st.secrets["gcp_service_account"]
+                st.write(f"Debug: Type of 'gcp_service_account' secret: {type(creds_data)}")
+                
+                # If Streamlit loads the secret as a string (e.g., if you pasted raw JSON string)
+                if isinstance(creds_data, str):
+                    st.write("Debug: Secret is a string, attempting to parse as JSON.")
+                    creds_info = json.loads(creds_data)
+                # If Streamlit loads the secret as a dictionary (e.g., if you pasted TOML with [section])
+                elif isinstance(creds_data, dict):
+                    st.write("Debug: Secret is already a dictionary.")
+                    creds_info = creds_data
+                else:
+                    st.error(f"Debug Error: Unexpected type for 'gcp_service_account' secret: {type(creds_data)}")
+                    return pd.DataFrame() # Return empty DataFrame on unexpected type
+                
+                # Now pass the correctly parsed dictionary to gspread
+                client = gspread.service_account(credentials=creds_info)
+                st.write("Debug: gspread client created successfully from secrets.")
+            except json.JSONDecodeError as e_json:
+                st.error(f"Debug Error: Failed to parse 'gcp_service_account' secret as JSON. Check secret format. Error: {e_json}")
+                return pd.DataFrame()
+            except Exception as e_gspread:
+                st.error(f"Debug Error: Failed to create gspread client from 'gcp_service_account' secret. Error: {e_gspread}")
+                return pd.DataFrame()
         else:
+            st.write("Debug: 'gcp_service_account' secret not found, falling back to local file.")
             # Load credentials from a JSON file (for Colab or local testing)
             # This path requires the SERVICE_ACCOUNT_FILE to exist
             from oauth2client.service_account import ServiceAccountCredentials
             creds = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_FILE, SCOPE)
-            # Authorize gspread to access Google Sheets for local/Colab testing
             client = gspread.authorize(creds)
             
         # Open the Spreadsheet and select the Worksheet (tab)
