@@ -222,22 +222,3 @@ if not df.empty:
 
 else:
     st.info("ไม่สามารถโหลดข้อมูลได้ โปรดตรวจสอบการตั้งค่าและไฟล์ Service Account JSON.")
-```
-
-### สิ่งที่คุณต้องทำต่อไป:
-
-1.  **นำโค้ด `app.py` เวอร์ชันใหม่นี้ไปวางทับในไฟล์ `app.py` บน GitHub:**
-    * ไปที่ GitHub Repository ของคุณ: [https://github.com/Methin1984/trade-dashboard-app](https://github.com/Methin1984/trade-dashboard-app)
-    * คลิกที่ไฟล์ **`app.py`**
-    * คลิกไอคอน **รูปดินสอ (`✏️`)** เพื่อแก้ไขไฟล์
-    * **ลบโค้ดเก่าทั้งหมดในไฟล์ `app.py` ออกไป**
-    * **วางโค้ดใหม่ที่คุณคัดลอกมาจาก Canvas ด้านบนนี้ลงไปแทน**
-    * เลื่อนลงมาด้านล่างสุด แล้วคลิกปุ่ม **`Commit changes`**
-
-2.  **สั่ง "Reboot app" ใน Streamlit Cloud:**
-    * ไปที่ Streamlit Community Cloud Dashboard: [https://share.streamlit.io/](https://share.streamlit.io/)
-    * เลือกแอป **`trade-dashboard-app`** ของคุณ
-    * คลิกปุ่ม **`Manage app`** ที่อยู่ด้านล่างซ้าย
-    * เลือก **`Reboot app`**
-
-หลังจากนี้ แอปของคุณควรจะสามารถโหลดข้อมูลจาก Google Sheet ได้สำเร็จและแสดง Dashboard ขึ้นมาครับ! หากยังติดปัญหาอยู่ หรือมีข้อผิดพลาดใหม่ปรากฏขึ้นมา แจ้งได้เลยคร
