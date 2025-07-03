@@ -32,15 +32,31 @@ def get_data_from_sheet():
     """Fetches all data from the specified Google Sheet using a Service Account."""
     try:
         # Create Credentials from Service Account JSON key
-        # For Streamlit Cloud, use gspread.service_account() which automatically
-        # looks for secrets in st.secrets["gcp_service_account"]
+        # For Streamlit Cloud, we explicitly load from st.secrets and pass to service_account_from_dict
         if st.secrets.get("gcp_service_account"):
             st.write("Debug: Found 'gcp_service_account' secret.")
             try:
-                # gspread.service_account() automatically reads from st.secrets["gcp_service_account"]
-                # No need to pass 'credentials=' argument explicitly if the secret is named correctly.
-                client = gspread.service_account() 
+                creds_data = st.secrets["gcp_service_account"]
+                st.write(f"Debug: Type of 'gcp_service_account' secret: {type(creds_data)}")
+                
+                # Streamlit secrets can sometimes load JSON directly as a dict, or as a string.
+                # We need to handle both cases to ensure creds_info is a dictionary.
+                if isinstance(creds_data, str):
+                    st.write("Debug: Secret is a string, attempting to parse as JSON.")
+                    creds_info = json.loads(creds_data)
+                elif isinstance(creds_data, dict):
+                    st.write("Debug: Secret is already a dictionary.")
+                    creds_info = creds_data
+                else:
+                    st.error(f"Debug Error: Unexpected type for 'gcp_service_account' secret: {type(creds_data)}")
+                    return pd.DataFrame() # Return empty DataFrame on unexpected type
+                
+                # Use gspread.service_account_from_dict() to explicitly create client from dictionary
+                client = gspread.service_account_from_dict(creds_info) 
                 st.write("Debug: gspread client created successfully from secrets.")
+            except json.JSONDecodeError as e_json:
+                st.error(f"Debug Error: Failed to parse 'gcp_service_account' secret as JSON. Check secret format. Error: {e_json}")
+                return pd.DataFrame()
             except Exception as e_gspread:
                 st.error(f"Debug Error: Failed to create gspread client from 'gcp_service_account' secret. Error: {e_gspread}")
                 return pd.DataFrame()
