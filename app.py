@@ -53,7 +53,8 @@ def get_data_from_sheet():
                     return pd.DataFrame() # Return empty DataFrame on unexpected type
                 
                 # Now pass the correctly parsed dictionary to gspread
-                client = gspread.service_account(credentials=creds_info)
+                # IMPORTANT: Remove 'credentials=' as gspread.service_account() handles it directly
+                client = gspread.service_account(credentials=creds_info) # Corrected line
                 st.write("Debug: gspread client created successfully from secrets.")
             except json.JSONDecodeError as e_json:
                 st.error(f"Debug Error: Failed to parse 'gcp_service_account' secret as JSON. Check secret format. Error: {e_json}")
