@@ -162,7 +162,7 @@ if not df.empty:
                 return go.Figure()
             summary = df_data.groupby(col_name)[value_col].sum().nlargest(top_n).reset_index()
             fig = px.bar(summary, x=col_name, y=value_col, title=title)
-            fig.update_xaxes(title_text=col_col)
+            fig.update_xaxes(title_text=col_name) # Corrected from col_col to col_name
             fig.update_yaxes(title_text=value_col)
             return fig
             
