@@ -99,7 +99,7 @@ def get_data_from_sheet():
 
 # --- Build Streamlit UI ---
 st.set_page_config(layout="wide", page_title="แดชบอร์ดข้อมูลการค้า") # Set wide layout and page title
-st.title('� แดชบอร์ดข้อมูลการค้าระหว่างประเทศ')
+st.title('📊 แดชบอร์ดข้อมูลการค้าระหว่างประเทศ')
 
 # Fetch data
 df = get_data_from_sheet()
@@ -158,7 +158,7 @@ if not df.empty:
                 return go.Figure()
             summary = df_data.groupby(col_name)[value_col].sum().nlargest(top_n).reset_index()
             fig = px.bar(summary, x=col_name, y=value_col, title=title)
-            fig.update_xaxes(title_text=col_name)
+            fig.update_xaxes(title_text=col_name) 
             fig.update_yaxes(title_text=value_col)
             return fig
             
