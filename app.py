@@ -34,18 +34,18 @@ def get_data_from_sheet():
         # Create Credentials from Service Account JSON key
         # For Streamlit Cloud, we explicitly load from st.secrets and pass to service_account_from_dict
         if st.secrets.get("gcp_service_account"):
-            st.write("Debug: Found 'gcp_service_account' secret.")
+            # st.write("Debug: Found 'gcp_service_account' secret.") # Debugging line
             try:
                 creds_data = st.secrets["gcp_service_account"]
-                st.write(f"Debug: Type of 'gcp_service_account' secret: {type(creds_data)}")
+                # st.write(f"Debug: Type of 'gcp_service_account' secret: {type(creds_data)}") # Debugging line
                 
                 # Streamlit secrets can sometimes load JSON directly as a dict, or as a string.
                 # We need to handle both cases to ensure creds_info is a dictionary.
                 if isinstance(creds_data, str):
-                    st.write("Debug: Secret is a string, attempting to parse as JSON.")
+                    # st.write("Debug: Secret is a string, attempting to parse as JSON.") # Debugging line
                     creds_info = json.loads(creds_data)
                 elif isinstance(creds_data, dict):
-                    st.write("Debug: Secret is already a dictionary.")
+                    # st.write("Debug: Secret is already a dictionary.") # Debugging line
                     creds_info = creds_data
                 else:
                     st.error(f"Debug Error: Unexpected type for 'gcp_service_account' secret: {type(creds_data)}")
@@ -53,7 +53,7 @@ def get_data_from_sheet():
                 
                 # Use gspread.service_account_from_dict() to explicitly create client from dictionary
                 client = gspread.service_account_from_dict(creds_info) 
-                st.write("Debug: gspread client created successfully from secrets.")
+                # st.write("Debug: gspread client created successfully from secrets.") # Debugging line
             except json.JSONDecodeError as e_json:
                 st.error(f"Debug Error: Failed to parse 'gcp_service_account' secret as JSON. Check secret format. Error: {e_json}")
                 return pd.DataFrame()
@@ -61,7 +61,7 @@ def get_data_from_sheet():
                 st.error(f"Debug Error: Failed to create gspread client from 'gcp_service_account' secret. Error: {e_gspread}")
                 return pd.DataFrame()
         else:
-            st.write("Debug: 'gcp_service_account' secret not found, falling back to local file.")
+            # st.write("Debug: 'gcp_service_account' secret not found, falling back to local file.") # Debugging line
             # Load credentials from a JSON file (for Colab or local testing)
             # This path requires the SERVICE_ACCOUNT_FILE to exist
             from oauth2client.service_account import ServiceAccountCredentials
