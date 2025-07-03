@@ -37,28 +37,10 @@ def get_data_from_sheet():
         if st.secrets.get("gcp_service_account"):
             st.write("Debug: Found 'gcp_service_account' secret.")
             try:
-                creds_data = st.secrets["gcp_service_account"]
-                st.write(f"Debug: Type of 'gcp_service_account' secret: {type(creds_data)}")
-                
-                # If Streamlit loads the secret as a string (e.g., if you pasted raw JSON string)
-                if isinstance(creds_data, str):
-                    st.write("Debug: Secret is a string, attempting to parse as JSON.")
-                    creds_info = json.loads(creds_data)
-                # If Streamlit loads the secret as a dictionary (e.g., if you pasted TOML with [section])
-                elif isinstance(creds_data, dict):
-                    st.write("Debug: Secret is already a dictionary.")
-                    creds_info = creds_data
-                else:
-                    st.error(f"Debug Error: Unexpected type for 'gcp_service_account' secret: {type(creds_data)}")
-                    return pd.DataFrame() # Return empty DataFrame on unexpected type
-                
-                # Now pass the correctly parsed dictionary to gspread
-                # IMPORTANT: Remove 'credentials=' as gspread.service_account() handles it directly
-                client = gspread.service_account(credentials=creds_info) # Corrected line
+                # gspread.service_account() automatically reads from st.secrets["gcp_service_account"]
+                # No need to pass 'credentials=' argument explicitly if the secret is named correctly.
+                client = gspread.service_account() 
                 st.write("Debug: gspread client created successfully from secrets.")
-            except json.JSONDecodeError as e_json:
-                st.error(f"Debug Error: Failed to parse 'gcp_service_account' secret as JSON. Check secret format. Error: {e_json}")
-                return pd.DataFrame()
             except Exception as e_gspread:
                 st.error(f"Debug Error: Failed to create gspread client from 'gcp_service_account' secret. Error: {e_gspread}")
                 return pd.DataFrame()
@@ -240,3 +222,4 @@ if not df.empty:
 
 else:
     st.info("ไม่สามารถโหลดข้อมูลได้ โปรดตรวจสอบการตั้งค่าและไฟล์ Service Account JSON.")
+```
